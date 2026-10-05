@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Werkbonnen – Van Eyen Technics</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1b6a8a"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Werkbonnen">
+<script src="pdf-lib.min.js"></script>
+<style>
+:root{--bg:#eceff2;--card:#fff;--tx:#14202b;--mu:#617080;--ac:#1b6a8a;--ac2:#e8f2f6;--bd:#d5dbe1;--rd:#c8321c;--ok:#23844a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171d;--card:#19232c;--tx:#e9eef2;--mu:#8e9cab;--ac:#4fb0d3;--ac2:#1d3340;--bd:#2c3945;--rd:#ff6a50;--ok:#4cc27d}}
+:root[data-theme="dark"]{--bg:#10171d;--card:#19232c;--tx:#e9eef2;--mu:#8e9cab;--ac:#4fb0d3;--ac2:#1d3340;--bd:#2c3945;--rd:#ff6a50;--ok:#4cc27d}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#app{max-width:760px;margin:0 auto;padding:14px}
+h1{font-size:26px;margin:6px 0 12px;letter-spacing:-.02em}h2{font-size:15px;margin:0 0 10px;color:var(--mu);font-weight:600}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+input,textarea,select{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:10px;margin:0 0 8px}
+textarea{min-height:70px;resize:vertical}input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:11px 16px;background:var(--ac);color:#fff;cursor:pointer}
+.b2{background:var(--ac2);color:var(--ac)}.red{background:var(--rd);color:#fff}.ok{background:var(--ok)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.row{display:flex;gap:8px;align-items:center}.row>*{margin-bottom:0}.wrap{flex-wrap:wrap}
+.tm{font-size:44px;font-weight:700;font-variant-numeric:tabular-nums;margin:2px 0 10px}
+.run .tm{color:var(--rd)}.mu{color:var(--mu);font-size:14px}
+.item{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:12px;border:1px solid var(--bd);border-radius:8px;margin-bottom:8px;background:var(--card);cursor:pointer}
+.chip{background:var(--ac2);color:var(--ac);padding:8px 12px;border-radius:99px;font-size:14px}
+.tag{font-size:13px;padding:3px 9px;border-radius:99px;background:var(--ac2);color:var(--ac);white-space:nowrap}.tag.d{background:var(--ok);color:#fff}.tag.r{background:var(--rd);color:#fff}
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px}
+.ph div{position:relative}.ph img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
+.ph button{position:absolute;top:4px;right:4px;padding:2px 9px;background:rgba(0,0,0,.65)}
+#sg,#sg2{width:100%;height:180px;background:#fff;border:1px dashed var(--mu);border-radius:8px;touch-action:none;display:block}
+.q{width:70px;text-align:center}
+.lg{height:46px;display:block;margin-bottom:6px}.tg{display:flex;gap:8px}.tg button{flex:1}.tg .on{background:var(--ac);color:#fff}.tg button:not(.on){background:var(--ac2);color:var(--ac)}.trow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px}.trow input{margin:0;min-width:0}
+@media print{body{background:#fff;color:#000}.np{display:none!important}.c{break-inside:avoid;border-color:#bbb}input,textarea{border:0;padding:2px 0;background:none}}
+</style></head><body><div id="app"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let S={orders:[],seq:0,articles:['Onderhoud verwarmingsketel','Verbrandingsanalyse','Ontluchten radiatoren','Waterdruk bijgevuld','Vervanging circulatiepomp','Reiniging warmtewisselaar'].map((n,i)=>({id:'a'+i,n}))};
+let v='list',cur=null,saveT;
+const db=new Promise(r=>{try{const q=indexedDB.open('wb',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null)}catch(e){r(null)}});
+async function load(){const d=await db;if(!d){try{const x=localStorage.getItem('wb');if(x)S=JSON.parse(x)}catch(e){}return}
+ return new Promise(r=>{const q=d.transaction('kv').objectStore('kv').get('s');q.onsuccess=()=>{if(q.result)S=q.result;r()};q.onerror=()=>r()})}
+async function save(){const d=await db;if(!d){try{localStorage.setItem('wb',JSON.stringify(S))}catch(e){}return}d.transaction('kv','readwrite').objectStore('kv').put(S,'s')}
+const sv=()=>{clearTimeout(saveT);saveT=setTimeout(save,300)};
+const O=()=>S.orders.find(o=>o.id==cur);
+const isRun=o=>o.t.length&&!o.t[o.t.length-1].e;
+const tot=o=>o.t.reduce((a,s)=>a+((s.e||Date.now())-s.s),0);
+const hms=ms=>{const s=Math.floor(ms/1000),p=n=>String(n).padStart(2,'0');return p(Math.floor(s/3600))+':'+p(Math.floor(s%3600/60))+':'+p(s%60)};
+const tm=t=>new Date(t).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
+const dt=d=>d?new Date(d).toLocaleDateString('nl-BE'):'';
+function go(x,id){v=x;if(id)cur=id;R();scrollTo(0,0)}
+function newO(){const y=new Date().getFullYear(),o={id:Date.now().toString(36),nr:'WB-'+y+'-'+String(++S.seq).padStart(3,'0'),datum:new Date().toISOString().slice(0,10),klant:'',adres:'',tel:'',mail:'',omschr:'',t:[],werk:[],opm:'',fotos:[],sig:'',sigNaam:'',status:'open',od:{ja:0,t:''},sm:0};S.orders.unshift(o);save();go('ord',o.id)}
+function delO(){if(confirm('Deze werkbon definitief verwijderen?')){S.orders=S.orders.filter(o=>o.id!=cur);save();go('list')}}
+function upd(k,x){const o=O();o[k]=x;if(k=='klant'&&!o.sm){o.sigNaam=x;const e=$('#snm');if(e)e.value=x}sv()}
+function sn(x){const o=O();o.sigNaam=x;o.sm=x!==o.klant;sv()}
+function setOd(k,x){O().od[k]=x;sv()}
+function odJa(x){O().od.ja=x;save();R()}
+const loc=ms=>new Date(ms-new Date(ms).getTimezoneOffset()*6e4).toISOString().slice(0,16);
+function setT(i,k,x){O().t[i][k]=x?new Date(x).getTime():0;save();R()}
+function addT(){const n=Date.now();O().t.push({s:n-36e5,e:n});save();R()}
+function rmT(i){O().t.splice(i,1);save();R()}
+function tgl(){const o=O();if(isRun(o))o.t[o.t.length-1].e=Date.now();else o.t.push({s:Date.now(),e:0});save();R()}
+function addW(id){const o=O(),a=S.articles.find(a=>a.id==id),w=o.werk.find(w=>w.n==a.n);w?w.q++:o.werk.push({n:a.n,q:1});save();R()}
+function qty(i,x){O().werk[i].q=Math.max(1,+x||1);sv()}
+function rmW(i){O().werk.splice(i,1);save();R()}
+function comp(f){return new Promise(r=>{const i=new Image,u=URL.createObjectURL(f);i.onload=()=>{const k=Math.min(1,1000/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);r(c.toDataURL('image/jpeg',.7))};i.src=u})}
+async function addF(inp){for(const f of inp.files)O().fotos.push(await comp(f));inp.value='';save();R()}
+function rmF(i){O().fotos.splice(i,1);save();R()}
+function fin(){const o=O();if(isRun(o))o.t[o.t.length-1].e=Date.now();o.status='afgewerkt';save();R()}
+function reopen(){O().status='open';save();R()}
+function addA(){const i=$('#na'),n=i.value.trim();if(!n)return;S.articles.push({id:'a'+Date.now(),n});save();R()}
+function rmA(id){S.articles=S.articles.filter(a=>a.id!=id);save();R()}
+function clrSig(){O().sig='';save();sigO()}
+function clrT(){S.tsig='';save();sigT()}
+
+const cl=t=>String(t??'').replace(/[\u00A0\u202F\u2009]/g,' ').replace(/[^\n\x20-\x7E\xA1-\xFF€]/g,'?');
+const hm=ms=>{const m=Math.round(ms/6e4);return Math.floor(m/60)+'u '+String(m%60).padStart(2,'0')+'m'};
+const fd=ms=>new Date(ms).toLocaleString('nl-BE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+const TERMS=['Ondertekening van deze werkbon geldt als bevestiging van de uitgevoerde werken.','Van Eyen Technics is niet aansprakelijk voor bestaande verborgen gebreken of gevolgschade buiten de uitgevoerde werken.','Facturen zijn betaalbaar binnen de afgesproken betalingstermijn.','Klachten dienen schriftelijk gemeld te worden binnen 7 kalenderdagen na uitvoering van de werken.','Alle materialen blijven eigendom van Van Eyen Technics tot volledige betaling van de factuur.','Eventuele extra werken buiten de beschreven opdracht kunnen bijkomend gefactureerd worden.'];
+function fname(o){const n=S.orders.filter(x=>x.datum==o.datum&&parseInt(x.id,36)<=parseInt(o.id,36)).length;return`werkbon_${o.datum.split('-').reverse().join('-')}_${n}.pdf`}
+async function pdf(){try{
+ const o=O(),L=PDFLib,doc=await L.PDFDocument.create(),f=await doc.embedFont(L.StandardFonts.Helvetica),fb=await doc.embedFont(L.StandardFonts.HelveticaBold),fi=await doc.embedFont(L.StandardFonts.HelveticaBoldOblique);
+ const W=595,H=842,M=44,bl=L.rgb(.21,.47,.71),dk=L.rgb(.2,.25,.3),gr=L.rgb(.45,.5,.55),ru=L.rgb(.82,.85,.88);
+ let pg,y;const np=()=>{pg=doc.addPage([W,H]);y=H-M},need=h=>{if(y-h<M)np()};
+ const tx=(t,x,s=10,ft=f,c=dk)=>pg.drawText(cl(t),{x,y,size:s,font:ft,color:c});
+ const rl=(x1,x2,th=.7,c=ru)=>pg.drawLine({start:{x:x1,y},end:{x:x2,y},thickness:th,color:c});
+ const rt=(t,s=9,ft=f,c=gr)=>tx(t,W-M-ft.widthOfTextAtSize(cl(t),s),s,ft,c);
+ const wrap=(t,w,s,ft=f)=>{const out=[];for(const p of cl(t).split('\n')){let l='';for(const wd of p.split(' ')){const u=l?l+' '+wd:wd;if(l&&ft.widthOfTextAtSize(u,s)>w){out.push(l);l=wd}else l=u}out.push(l)}return out};
+ const para=(t,x,w,s=10,ft=f,c=dk)=>{for(const l of wrap(t,w,s,ft)){need(s*1.4);y-=s*1.4;tx(l,x,s,ft,c)}};
+ const hd=t=>{need(50);y-=26;tx(t,M,13,fi,bl);y-=4};
+ const fld=(a,b)=>{need(24);y-=18;tx(a+':',M+8,9,f,gr);tx(b,M+86);y-=5;rl(M+8,W-M)};
+ np();
+ const lg=await doc.embedPng(await (await fetch('logo.png')).arrayBuffer()),ld=lg.scale(120/lg.width);
+ pg.drawImage(lg,{x:(W-ld.width)/2,y:y-ld.height,width:ld.width,height:ld.height});y-=ld.height+24;
+ tx('Van Eyen Technics',M,11,fb);rt('info@vaneyentechnics.be');y-=13;tx('Ilfeldlaan 34, 2610 Wilrijk',M,9);rt('0479687892');y-=12;tx('BTW: BE1034.973.271',M,9);y-=10;rl(M,W-M);
+ y-=38;tx('Werkbon',M,26,f,bl);y-=22;tx('# '+o.nr,M,12);
+ hd('Klantgegevens');fld('Naam',o.klant);fld('Adres',o.adres);fld('Telefoon',o.tel);if(o.mail)fld('E-mail',o.mail);fld('Datum',dt(o.datum));
+ hd('Werkzaamheden');if(o.omschr){para(o.omschr,M+8,W-2*M-16);y-=6}
+ need(30);y-=16;tx('Omschrijving',M+8,9,fb);tx('Aantal',W-M-40,9,fb);y-=6;rl(M,W-M,1.4,gr);
+ if(!o.werk.length)para('Geen artikelen geselecteerd.',M+8,300,9,f,gr);
+ for(const w of o.werk){const ls=wrap(w.n,W-2*M-90,10);need(ls.length*14+8);y-=14;ls.forEach((l,i)=>{if(i)y-=14;tx(l,M+8)});tx(String(w.q),W-M-30);y-=6;rl(M,W-M)}
+ if(o.opm){y-=6;para('Opmerkingen: '+o.opm,M+8,W-2*M-16)}
+ hd('Tijdsregistratie');if(!o.t.length)para('Geen tijd geregistreerd.',M+8,300,9,f,gr);
+ for(const s of o.t){need(22);y-=15;tx(fd(s.s)+'  -  '+(s.e?fd(s.e):'bezig'),M+8);tx(hm((s.e||Date.now())-s.s),W-M-60);y-=5;rl(M,W-M)}
+ if(o.t.length){need(22);y-=18;tx('Totaal uren',M+8,10,fb);tx(hm(tot(o)),W-M-60,10,fb)}
+ if(o.od.ja){hd('Onderdeel bestellen en vervangen');para(o.od.t||'Ja',M+8,W-2*M-16)}
+ if(o.fotos.length){need(200);hd("Foto's");const cw=(W-2*M-16)/3;for(let i=0;i<o.fotos.length;i+=3){const ims=[];for(const fo of o.fotos.slice(i,i+3))ims.push(await doc.embedJpg(fo));const ds=ims.map(m=>m.scale(cw/m.width)),h=Math.max(...ds.map(d=>d.height));need(h+8);y-=h;ims.forEach((m,k)=>pg.drawImage(m,{x:M+k*(cw+8),y:y+h-ds[k].height,width:cw,height:ds[k].height}));y-=8}}
+ need(150);y-=30;const x2=W/2+10,top=y;tx('Handtekening klant',M,9,f,gr);tx('Handtekening technieker',x2,9,f,gr);
+ for(const[d,x]of[[o.sig,M],[S.tsig,x2]])if(d){const m=await doc.embedPng(d),z=m.scaleToFit(220,80);pg.drawImage(m,{x,y:top-8-z.height,width:z.width,height:z.height})}
+ y=top-96;rl(M,M+230,.8,gr);rl(x2,x2+230,.8,gr);y-=12;tx(o.sigNaam||o.klant,M,9);tx('Jordy Van Eyen',x2,9);
+ need(90);y-=30;tx('Algemene voorwaarden:',M,7.5,fb,gr);for(const t of TERMS)para('• '+t,M,W-2*M,7,f,gr);
+ const name=fname(o),file=new File([await doc.save()],name,{type:'application/pdf'});
+ try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}}catch(e){if(e.name=='AbortError')return}
+ const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
+}catch(e){alert('PDF maken mislukt: '+e.message)}}
+function VL(){return `<img class="lg" src="logo.png" alt="Van Eyen Technics"><div class="top"><h1>Werkbonnen</h1><button class="b2" onclick="go('set')">Instellingen</button></div>
+<button style="width:100%;margin-bottom:12px;padding:14px" onclick="newO()">+ Nieuwe werkbon</button>
+${S.orders.length?S.orders.map(o=>`<div class="item" onclick="go('ord','${o.id}')"><div><b>${esc(o.klant)||'Zonder klantnaam'}</b><div class="mu">${o.nr} · ${dt(o.datum)} · ${hms(tot(o))}</div></div>${isRun(o)?'<span class="tag r">Loopt</span>':`<span class="tag ${o.status=='afgewerkt'?'d':''}">${o.status=='afgewerkt'?'Afgewerkt':'Open'}</span>`}</div>`).join(''):'<p class="mu">Nog geen werkbonnen. Maak je eerste werkbon aan.</p>'}`}
+
+function VS(){return `<div class="top"><h1>Instellingen</h1><button class="b2" onclick="go('list')">Klaar</button></div>
+<div class="c"><h2>Artikelen / uitgevoerde werken</h2><p class="mu">Deze lijst kies je op een werkbon om de uitgevoerde werken op te sommen.</p>
+<div class="row"><input id="na" placeholder="Nieuw artikel of werk" onkeydown="if(event.key=='Enter')addA()"><button onclick="addA()">Toevoegen</button></div><br>
+${S.articles.map(a=>`<div class="item" style="cursor:default"><span>${esc(a.n)}</span><button class="red" onclick="rmA('${a.id}')">Verwijder</button></div>`).join('')||'<p class="mu">Geen artikelen.</p>'}</div>
+<div class="c"><h2>Handtekening technieker</h2><p class="mu">Wordt automatisch op elke pdf geplaatst.</p><canvas id="sg2"></canvas><button class="b2" style="margin-top:8px" onclick="clrT()">Wissen</button></div>
+<p class="mu">Gegevens worden bewaard op dit toestel, in deze browser. Ze worden niet gesynchroniseerd tussen toestellen.</p>`}
+
+function VO(){const o=O(),run=isRun(o),done=o.status=='afgewerkt';
+return `<div class="top np"><button class="b2" onclick="go('list')">← Terug</button><span class="tag ${done?'d':''}">${done?'Afgewerkt':'Open'}</span></div>
+<h1>${o.nr}</h1><div class="mu" style="margin:-8px 0 12px">Van Eyen Technics</div>
+<div class="c"><h2>Klant</h2>
+<input placeholder="Naam klant" value="${esc(o.klant)}" oninput="upd('klant',this.value)">
+<input placeholder="Adres" value="${esc(o.adres)}" oninput="upd('adres',this.value)">
+<div class="row wrap"><input style="flex:1;min-width:140px" type="tel" placeholder="Telefoon" value="${esc(o.tel)}" oninput="upd('tel',this.value)"><input style="flex:1;min-width:140px" type="email" placeholder="E-mail" value="${esc(o.mail)}" oninput="upd('mail',this.value)"></div><br>
+<div class="mu">Datum</div><input type="date" value="${o.datum}" oninput="upd('datum',this.value)">
+<textarea placeholder="Omschrijving / reden van interventie" oninput="upd('omschr',this.value)">${esc(o.omschr)}</textarea></div>
+<div class="c ${run?'run':''}"><h2>Tijdsregistratie</h2><div class="tm" id="tt">${hms(tot(o))}</div>
+${done?'':`<button class="np ${run?'red':''}" onclick="tgl()">${run?'■ Stop':'▶ Start'}</button>`}
+<div style="margin-top:12px"><div class="mu" style="margin-bottom:6px">Begin- en eindtijd, aan te passen waar nodig</div>${o.t.map((s,i)=>`<div class="trow"><input type="datetime-local" value="${loc(s.s)}" onchange="setT(${i},'s',this.value)"><input type="datetime-local" value="${s.e?loc(s.e):''}" ${s.e?'':'disabled'} onchange="setT(${i},'e',this.value)"><button class="red np" onclick="rmT(${i})">✕</button></div>`).join('')}<button class="b2 np" onclick="addT()">+ Tijdsblok toevoegen</button></div></div>
+<div class="c"><h2>Uitgevoerde werken</h2>
+<div class="row wrap np">${S.articles.map(a=>`<button class="chip" style="border:0" onclick="addW('${a.id}')">+ ${esc(a.n)}</button>`).join('')||'<span class="mu">Voeg artikelen toe in de instellingen.</span>'}</div>
+<div style="margin-top:10px">${o.werk.map((w,i)=>`<div class="row" style="margin-bottom:6px"><span style="flex:1">${esc(w.n)}</span><input class="q" type="number" min="1" value="${w.q}" oninput="qty(${i},this.value)"><button class="red np" onclick="rmW(${i})">✕</button></div>`).join('')}</div>
+<textarea placeholder="Extra opmerkingen" oninput="upd('opm',this.value)">${esc(o.opm)}</textarea></div>
+<div class="c"><h2>Onderdeel bestellen en vervangen?</h2><div class="tg np"><button class="${o.od.ja?'':'on'}" onclick="odJa(0)">Nee</button><button class="${o.od.ja?'on':''}" onclick="odJa(1)">Ja</button></div>${o.od.ja?`<textarea style="margin-top:8px" placeholder="Welk onderdeel? Merk, type, referentie, aantal" oninput="setOd('t',this.value)">${esc(o.od.t)}</textarea>`:''}</div>
+<div class="c"><h2>Foto's</h2><input class="np" type="file" accept="image/*" multiple onchange="addF(this)">
+<div class="ph">${o.fotos.map((f,i)=>`<div><img src="${f}" alt="Foto ${i+1}"><button class="np" onclick="rmF(${i})">✕</button></div>`).join('')}</div></div>
+<div class="c"><h2>Handtekening klant</h2><input id="snm" placeholder="Naam ondertekenaar" value="${esc(o.sigNaam)}" oninput="sn(this.value)">
+<canvas id="sg"></canvas><button class="b2 np" style="margin-top:8px" onclick="clrSig()">Wissen</button></div>
+<div class="row wrap np" style="margin-bottom:24px">${done?'<button class="b2" onclick="reopen()">Heropenen</button>':'<button class="ok" onclick="fin()">Werkbon afronden</button>'}<button onclick="pdf()">Exporteer als pdf</button><button class="red" onclick="delO()">Verwijderen</button></div>`}
+
+function initSig(id,get,set){const c=$('#'+id);if(!c)return;const d=devicePixelRatio||1,w=c.clientWidth,h=180;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.lineWidth=2.2;x.lineCap='round';x.strokeStyle='#111';
+ if(get()){const i=new Image;i.onload=()=>x.drawImage(i,0,0,w,h);i.src=get()}
+ let dr=0;const p=e=>{const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+ c.onpointerdown=e=>{dr=1;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e));e.preventDefault()};
+ c.onpointermove=e=>{if(dr){x.lineTo(...p(e));x.stroke()}};
+ c.onpointerup=()=>{if(dr){dr=0;set(c.toDataURL('image/png'))}}}
+const sigO=()=>initSig('sg',()=>O().sig,x=>{O().sig=x;sv()});
+const sigT=()=>initSig('sg2',()=>S.tsig,x=>{S.tsig=x;sv()});
+function R(){$('#app').innerHTML=v=='list'?VL():v=='set'?VS():VO();if(v=='ord')sigO();if(v=='set')sigT()}
+setInterval(()=>{if(v=='ord'){const o=O(),e=$('#tt');if(o&&e&&isRun(o))e.textContent=hms(tot(o))}},1000);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+navigator.storage?.persist?.();
+load().then(R);
+</script></body></html>
