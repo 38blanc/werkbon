@@ -50,11 +50,13 @@ const tot=o=>o.t.reduce((a,s)=>a+((s.e||Date.now())-s.s),0);
 const hms=ms=>{const s=Math.floor(ms/1000),p=n=>String(n).padStart(2,'0');return p(Math.floor(s/3600))+':'+p(Math.floor(s%3600/60))+':'+p(s%60)};
 const tm=t=>new Date(t).toLocaleTimeString('nl-BE',{hour:'2-digit',minute:'2-digit'});
 const dt=d=>d?new Date(d).toLocaleDateString('nl-BE'):'';
-function go(x,id){v=x;if(id)cur=id;R();scrollTo(0,0)}
-function newO(){const y=new Date().getFullYear(),o={id:Date.now().toString(36),nr:'WB-'+y+'-'+String(++S.seq).padStart(3,'0'),datum:new Date().toISOString().slice(0,10),klant:'',adres:'',tel:'',mail:'',omschr:'',t:[],werk:[],opm:'',fotos:[],sig:'',sigNaam:'',status:'open',od:{ja:0,t:''},sm:0};S.orders.unshift(o);save();go('ord',o.id)}
+let ren=0;function go(x,id){ren=0;v=x;if(id)cur=id;R();scrollTo(0,0)}
+function newO(cid){const y=new Date().getFullYear(),o={id:Date.now().toString(36),nr:'WB-'+y+'-'+String(++S.seq).padStart(3,'0'),datum:new Date().toISOString().slice(0,10),klant:'',adres:'',tel:'',mail:'',omschr:'',t:[],werk:[],opm:'',fotos:[],sig:'',sigNaam:'',status:'open',od:{ja:0,t:''},sm:0,btw:'',pr:0};const cc=cid&&S.clients.find(c=>c.id==cid);if(cc)Object.assign(o,{klant:cc.n,adres:cc.adres,tel:cc.tel,mail:cc.mail,sigNaam:cc.n});S.orders.unshift(o);save();go('ord',o.id)}
 function delO(){if(confirm('Deze werkbon definitief verwijderen?')){S.orders=S.orders.filter(o=>o.id!=cur);save();go('list')}}
 function upd(k,x){const o=O();o[k]=x;if(k=='klant'&&!o.sm){o.sigNaam=x;const e=$('#snm');if(e)e.value=x}sv()}
 function sn(x){const o=O();o.sigNaam=x;o.sm=x!==o.klant;sv()}
+function setBtw(x){const o=O();o.btw=o.btw==x?'':x;save();R()}
+function saveRn(){const t=$('#rnm').value.trim();if(t)O().nr=t;ren=0;save();R()}
 function setOd(k,x){O().od[k]=x;sv()}
 function odJa(x){O().od.ja=x;save();R()}
 const loc=ms=>new Date(ms-new Date(ms).getTimezoneOffset()*6e4).toISOString().slice(0,16);
@@ -62,25 +64,25 @@ function setT(i,k,x){O().t[i][k]=x?new Date(x).getTime():0;save();R()}
 function addT(){const n=Date.now();O().t.push({s:n-36e5,e:n});save();R()}
 function rmT(i){O().t.splice(i,1);save();R()}
 function tgl(){const o=O();if(isRun(o))o.t[o.t.length-1].e=Date.now();else o.t.push({s:Date.now(),e:0});save();R()}
-function addW(id){const o=O(),a=S.articles.find(a=>a.id==id),w=o.werk.find(w=>w.n==a.n);w?w.q++:o.werk.push({n:a.n,q:1});save();R()}
-function qty(i,x){O().werk[i].q=Math.max(1,+x||1);sv()}
+function addW(id){const o=O(),a=S.articles.find(a=>a.id==id),w=o.werk.find(w=>w.n==a.n);w?w.q++:o.werk.push({n:a.n,q:1,p:a.p,u:a.u});save();R()}
+function qty(i,x){O().werk[i].q=Math.max(.01,+x||1);sv();upT()}
 function rmW(i){O().werk.splice(i,1);save();R()}
 function comp(f){return new Promise(r=>{const i=new Image,u=URL.createObjectURL(f);i.onload=()=>{const k=Math.min(1,1000/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);r(c.toDataURL('image/jpeg',.7))};i.src=u})}
 async function addF(inp){for(const f of inp.files)O().fotos.push(await comp(f));inp.value='';save();R()}
 function rmF(i){O().fotos.splice(i,1);save();R()}
-function fin(){const o=O();if(isRun(o))o.t[o.t.length-1].e=Date.now();o.status='afgewerkt';save();R()}
+function fin(){const o=O();if(isRun(o))o.t[o.t.length-1].e=Date.now();o.status='afgewerkt';addCl(o);save();R()}
 function reopen(){O().status='open';save();R()}
-function addA(){const i=$('#na'),n=i.value.trim();if(!n)return;S.articles.push({id:'a'+Date.now(),n});save();R()}
+function addA(){const i=$('#na'),n=i.value.trim();if(!n)return;S.articles.push({id:'a'+Date.now(),n,u:'stuk'});save();R()}
 function rmA(id){S.articles=S.articles.filter(a=>a.id!=id);save();R()}
-function clrSig(){O().sig='';save();sigO()}
+function clrSig(){O().sig='';O().sigT=0;save();sigO()}
 function clrT(){S.tsig='';save();sigT()}
 
 const cl=t=>String(t??'').replace(/[\u00A0\u202F\u2009]/g,' ').replace(/[^\n\x20-\x7E\xA1-\xFF€]/g,'?');
 const hm=ms=>{const m=Math.round(ms/6e4);return Math.floor(m/60)+'u '+String(m%60).padStart(2,'0')+'m'};
 const fd=ms=>new Date(ms).toLocaleString('nl-BE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 const TERMS=['Ondertekening van deze werkbon geldt als bevestiging van de uitgevoerde werken.','Van Eyen Technics is niet aansprakelijk voor bestaande verborgen gebreken of gevolgschade buiten de uitgevoerde werken.','Facturen zijn betaalbaar binnen de afgesproken betalingstermijn.','Klachten dienen schriftelijk gemeld te worden binnen 7 kalenderdagen na uitvoering van de werken.','Alle materialen blijven eigendom van Van Eyen Technics tot volledige betaling van de factuur.','Eventuele extra werken buiten de beschreven opdracht kunnen bijkomend gefactureerd worden.'];
-const fname=o=>o.nr+'.pdf';
-async function pdf(id){try{
+const fname=o=>o.nr.replace(/[\\/:*?"<>|]/g,'-')+'.pdf';
+async function pdf2(id){try{
  const o=id?S.orders.find(x=>x.id==id):O(),L=PDFLib,doc=await L.PDFDocument.create(),f=await doc.embedFont(L.StandardFonts.Helvetica),fb=await doc.embedFont(L.StandardFonts.HelveticaBold),fi=await doc.embedFont(L.StandardFonts.HelveticaBoldOblique);
  const W=595,H=842,M=44,bl=L.rgb(.21,.47,.71),dk=L.rgb(.2,.25,.3),gr=L.rgb(.45,.5,.55),ru=L.rgb(.82,.85,.88);
  let pg,y;const np=()=>{pg=doc.addPage([W,H]);y=H-M},need=h=>{if(y-h<M)np()};
@@ -96,7 +98,7 @@ async function pdf(id){try{
  pg.drawImage(lg,{x:(W-ld.width)/2,y:y-ld.height,width:ld.width,height:ld.height});y-=ld.height+24;
  tx('Van Eyen Technics',M,11,fb);rt('info@vaneyentechnics.be');y-=13;tx('Ilfeldlaan 34, 2610 Wilrijk',M,9);rt('0479687892');y-=12;tx('BTW: BE1034.973.271',M,9);y-=10;rl(M,W-M);
  y-=38;tx('Werkbon',M,26,f,bl);y-=22;tx('# '+o.nr,M,12);
- if(o.klant||o.adres||o.tel||o.mail||o.datum)hd('Klantgegevens');fld('Naam',o.klant);fld('Adres',o.adres);fld('Telefoon',o.tel);if(o.mail)fld('E-mail',o.mail);fld('Datum',dt(o.datum));
+ if(o.klant||o.adres||o.tel||o.mail||o.datum)hd('Klantgegevens');fld('Naam',o.klant);fld('Adres',o.adres);fld('Telefoon',o.tel);if(o.mail)fld('E-mail',o.mail);fld('Datum',dt(o.datum));fld('Btw-tarief',o.btw?o.btw+'% (woning '+(o.btw==6?'ouder':'nieuwer')+' dan 10 jaar)':'');
  if(o.omschr||o.werk.length||o.opm)hd('Werkzaamheden');if(o.omschr){para(o.omschr,M+8,W-2*M-16);y-=6}
  if(o.werk.length){need(30);y-=16;tx('Omschrijving',M+8,9,fb);tx('Aantal',W-M-40,9,fb);y-=6;rl(M,W-M,1.4,gr)}
  
@@ -114,47 +116,125 @@ async function pdf(id){try{
  try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}}catch(e){if(e.name=='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
 }catch(e){alert('PDF maken mislukt: '+e.message)}}
+const TERMS3=["Ondertekening van deze werkbon geldt als bevestiging van de uitgevoerde werken.",
+"Facturen zijn betaalbaar binnen de op de factuur vermelde termijn. Bij laattijdige betaling zijn van rechtswege en zonder ingebrekestelling interesten en een forfaitaire schadevergoeding verschuldigd, overeenkomstig de wet.",
+"Klachten over zichtbare gebreken worden schriftelijk gemeld binnen 7 kalenderdagen na uitvoering, onverminderd de wettelijke garantie.",
+"Materialen blijven eigendom van Van Eyen Technics tot volledige betaling. Speciaal bestelde materialen worden niet teruggenomen. Extra werken buiten de beschreven opdracht kunnen bijkomend worden gefactureerd.",
+"Vastgestelde gebreken of veiligheidsrisico's (bv. koolmonoxide, gaslek) worden aan de klant gemeld; herstellingen gebeuren na akkoord van de klant. Bij direct gevaar mag het toestel buiten dienst worden gesteld. De klant blijft verantwoordelijk voor de wettelijk verplichte periodieke onderhoudsbeurten en keuringen.",
+"Van Eyen Technics is niet aansprakelijk voor bestaande verborgen gebreken of gevolgschade buiten de uitgevoerde werken, noch voor schade door vorst, kalk, vervuild water of onoordeelkundig gebruik, onverminderd dwingende wettelijke bepalingen.",
+"Garantie: de wettelijke garantie voor consumenten en de fabrieksgarantie; deze vervalt bij tussenkomst van derden zonder toestemming.",
+"Btw: indien een btw-tarief is vermeld, bevestigt de klant dat de woning ouder of nieuwer is dan 10 jaar zoals aangeduid en hoofdzakelijk privé wordt gebruikt; bij een onjuiste verklaring is de bijkomende btw ten laste van de klant.",
+"Een consument die buiten de verkoopruimte contracteert, heeft in principe 14 dagen herroepingsrecht, behalve voor dringende herstellingen of onderhoud op uitdrukkelijk verzoek van de klant.",
+"Persoonsgegevens en foto's worden enkel verwerkt voor de uitvoering van de opdracht, de administratie en wettelijke verplichtingen (AVG): info@vaneyentechnics.be.",
+"Belgisch recht is van toepassing; de rechtbanken van het arrondissement Antwerpen zijn bevoegd, onder voorbehoud van dwingende consumentenbescherming."];
+const eur=n=>'€ '+n.toLocaleString('nl-BE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const sums=o=>{const ex=o.werk.reduce((a,w)=>a+(+w.p||0)*w.q,0),bt=o.btw?ex*o.btw/100:0;return{ex,bt,inc:ex+bt,any:o.werk.some(w=>w.p)}};
+const TOT=o=>{const s=sums(o);return s.any?`<div class="mu" style="text-align:right;margin:8px 0">Excl. btw <b>${eur(s.ex)}</b>${o.btw?` · Btw ${o.btw}% <b>${eur(s.bt)}</b> · Totaal <b>${eur(s.inc)}</b>`:' · kies de woning voor het btw-bedrag'}</div>`:''};
+const upT=()=>{const e=$('#tot');if(e)e.innerHTML=TOT(O())};
+function prc(i,x){O().werk[i].p=x===''?undefined:+x;sv();upT()}
+function setPr(x){O().pr=x;save();R()}
+function setA(id,k,v){const a=S.articles.find(a=>a.id==id);a[k]=k=='p'?(v===''?undefined:+v):v;sv()}
+const ords=c=>S.orders.filter(o=>o.klant.trim().toLowerCase()==c.n.trim().toLowerCase());
+const C=()=>S.clients.find(c=>c.id==cur);
+function addCl(o){const n=o.klant.trim();if(!n)return;const c=S.clients.find(c=>c.n.trim().toLowerCase()==n.toLowerCase());if(c){c.adres=c.adres||o.adres;c.tel=c.tel||o.tel;c.mail=c.mail||o.mail}else S.clients.push({id:'c'+Date.now().toString(36),n,adres:o.adres,tel:o.tel,mail:o.mail})}
+function pick(v){const o=O(),c=S.clients.find(c=>c.n.toLowerCase()==v.trim().toLowerCase());if(c){o.adres=o.adres||c.adres||'';o.tel=o.tel||c.tel||'';o.mail=o.mail||c.mail||'';save();R()}}
+function newC(){const c={id:'c'+Date.now().toString(36),n:'',adres:'',tel:'',mail:''};S.clients.push(c);save();go('cd',c.id)}
+function setC(k,v){C()[k]=v;sv()}
+function delC(){if(confirm('Deze klant verwijderen? Bestaande werkbonnen blijven bewaard.')){S.clients=S.clients.filter(c=>c.id!=cur);save();go('list')}}
+function VC(){const c=C(),h=ords(c).sort((a,b)=>b.datum.localeCompare(a.datum));return `<div class="top np"><button class="b2" onclick="go('list')">← Terug</button><button class="red" onclick="delC()">Verwijderen</button></div><h1>Klant</h1>
+<div class="c"><input placeholder="Naam" value="${esc(c.n)}" oninput="setC('n',this.value)"><input placeholder="Adres" value="${esc(c.adres)}" oninput="setC('adres',this.value)"><div class="row wrap"><input style="flex:1;min-width:140px" type="tel" placeholder="Telefoon" value="${esc(c.tel)}" oninput="setC('tel',this.value)"><input style="flex:1;min-width:140px" type="email" placeholder="E-mail" value="${esc(c.mail)}" oninput="setC('mail',this.value)"></div></div>
+<button style="width:100%;margin-bottom:12px" onclick="newO('${c.id}')">+ Nieuwe werkbon voor deze klant</button>
+<div class="c"><h2>Werkbonnen (${h.length})</h2>${h.map(row).join('')||'<p class="mu">Nog geen werkbonnen.</p>'}</div>`}
+async function deliver(file){try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return 1}}catch(e){if(e.name=='AbortError')return}const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();return 1}
+async function backup(){const f=new File([JSON.stringify(S)],'werkbon-backup-'+new Date().toISOString().slice(0,10)+'.json',{type:'application/json'});if(await deliver(f)){S.bk=Date.now();save();R()}}
+async function imp(inp){try{const d=JSON.parse(await inp.files[0].text());if(!Array.isArray(d.orders))throw 0;const m=(a,b)=>{const k=new Map(a.map(x=>[x.id,x]));b.forEach(x=>k.set(x.id,x));return[...k.values()]};S.orders=m(S.orders,d.orders);S.articles=m(S.articles,d.articles||[]);S.clients=m(S.clients||[],d.clients||[]);S.seq=Math.max(S.seq,d.seq||0);if(d.tsig&&!S.tsig)S.tsig=d.tsig;await save();alert('Back-up teruggezet.');go('list')}catch(e){alert('Dit bestand is geen geldige back-up.')}inp.value=''}
+function pdf(id){return(S.lay?pdf3:pdf2)(id)}
+async function pdf3(id){try{
+ const o=id?S.orders.find(x=>x.id==id):O(),L=PDFLib,doc=await L.PDFDocument.create(),f=await doc.embedFont(L.StandardFonts.Helvetica),fb=await doc.embedFont(L.StandardFonts.HelveticaBold);
+ const W=595,H=842,M=36,CW=W-2*M,bl=L.rgb(.17,.42,.65),dk=L.rgb(.1,.12,.15),gr=L.rgb(.45,.48,.52),zb=L.rgb(.95,.96,.97),sb=L.rgb(.89,.93,.97),wh=L.rgb(1,1,1),pr=o.pr&&sums(o).any,qx=pr?350:W-M-8,px=440;
+ const one=S.lay==2;let pg,y,first,lim;const np=()=>{pg=doc.addPage([W,H]);y=H-M},need=h=>{if(y-h<(pg===first?lim:M+14))np()};
+ const tx=(t,x,s=9.5,ft=f,c=dk)=>pg.drawText(cl(t),{x,y,size:s,font:ft,color:c});
+ const rx=(t,xe,s=9.5,ft=f,c=dk)=>tx(t,xe-ft.widthOfTextAtSize(cl(t),s),s,ft,c);
+ const rc=(x,yy,w,h,c)=>pg.drawRectangle({x,y:yy,width:w,height:h,color:c});
+ const wrap=(t,w,s,ft=f)=>{const out=[];for(const p of cl(t).split('\n')){let l='';for(const wd of p.split(' ')){const u=l?l+' '+wd:wd;if(l&&ft.widthOfTextAtSize(u,s)>w){out.push(l);l=wd}else l=u}out.push(l)}return out};
+ const para=(t,x,w,s=9.5,ft=f,c=dk,lh=1.35)=>{for(const l of wrap(t,w,s,ft)){need(s*lh);y-=s*lh;tx(l,x,s,ft,c)}};
+ const sec=t=>{need(one?40:50);y-=one?15:22;rc(M,y,CW,15,sb);y+=4;tx(t.toUpperCase(),M+8,7.5,fb,bl);y-=one?6:8};
+ const rowz=(i,h,fn)=>{need(h);const t=y;if(i%2==0)rc(M,t-h,CW,h,zb);y=t-10;fn();y=t-h};
+ const ts=one?TERMS3.map((t,i)=>wrap((i+1)+'. '+t,CW-4,5.8)):[],th=ts.reduce((a,l)=>a+l.length*7.1+1,0)+(one?14:0);lim=one?M+14+th+6:M+14;np();first=pg;
+ const lg=await doc.embedPng(await (await fetch('logo.png')).arrayBuffer()),ld=lg.scale((one?54:78)/lg.width),y0=y;
+ pg.drawImage(lg,{x:M,y:y-ld.height,width:ld.width,height:ld.height});
+ y=y0-14;rx('Van Eyen Technics',W-M,12,fb);for(const t of['Ilfeldlaan 34, 2610 Antwerpen','info@vaneyentechnics.be  ·  0479687892','BTW BE1034.973.271']){y-=12.5;rx(t,W-M,8.5,f,gr)}
+ const by=y0-ld.height-10;rc(M,by-24,CW,24,bl);y=by-16;tx('WERKBON',M+10,12,fb,wh);tx(o.nr,M+82,12,f,wh);rx(dt(o.datum),W-M-10,10,f,wh);y=by-34;
+ const RL=[],RR=[];
+ for(const[a,b]of[['KLANT',o.klant],['ADRES',o.adres],['TEL',o.tel],['E-MAIL',o.mail]])if(b)wrap(b,205,9.5).forEach((l,i)=>RL.push([i?'':a,l]));
+ for(const[a,b]of[['DATUM',dt(o.datum)],['BTW',o.btw?o.btw+'% · woning '+(o.btw==6?'ouder':'nieuwer')+' dan 10 jaar':''],['TIJD',o.t.length?hm(tot(o)):''],['ONDERDEEL',o.od.ja?'te bestellen en vervangen':'']])if(b)wrap(b,170,9.5).forEach((l,i)=>RR.push([i?'':a,l]));
+ const n=Math.max(RL.length,RR.length);
+ if(n){const h=n*13+12,t0=y;rc(M,t0-h,CW,h,zb);RL.forEach(([a,b],i)=>{y=t0-13-13*i+2;tx(a,M+10,7,fb,gr);tx(b,M+58,9.5,i?f:fb)});RR.forEach(([a,b],i)=>{y=t0-13-13*i+2;tx(a,M+290,7,fb,gr);tx(b,M+350,9.5)});y=t0-h}
+ if(o.omschr||o.werk.length||o.opm)sec('Werkzaamheden');
+ if(o.omschr){y-=2;para(o.omschr,M+2,CW-4)}
+ if(o.werk.length){need(34);y-=14;tx('OMSCHRIJVING',M+8,7,fb,gr);rx('AANTAL',qx,7,fb,gr);if(pr){rx('PRIJS',px,7,fb,gr);rx('TOTAAL',W-M-8,7,fb,gr)}y-=4;
+  o.werk.forEach((w,i)=>{const ls=wrap(w.n,pr?260:380,9.5),h=ls.length*(one?11:12)+(one?4:5);rowz(i,h,()=>{tx(ls[0],M+8);rx(w.q+(w.u&&w.u!='stuk'?' '+w.u:''),qx);if(pr&&w.p!=null){rx(eur(+w.p),px);rx(eur(w.p*w.q),W-M-8)}ls.slice(1).forEach(l=>{y-=one?11:12;tx(l,M+8)})})});
+  if(pr){const s=sums(o);need(56);y-=6;if(o.btw){y-=13;rx('Totaal excl. btw',W-M-110);rx(eur(s.ex),W-M-8);y-=13;rx('Btw '+o.btw+'%',W-M-110);rx(eur(s.bt),W-M-8)}y-=22;rc(W-M-215,y-6,215,20,bl);tx(o.btw?'TOTAAL INCL. BTW':'TOTAAL EXCL. BTW',W-M-208,8,fb,wh);rx(eur(o.btw?s.inc:s.ex),W-M-8,11,fb,wh)}}
+ if(o.opm){y-=4;para('Opmerkingen: '+o.opm,M+2,CW-4);y-=one?4:0}
+ if(o.t.length){sec('Tijdsregistratie');need(30);y-=12;tx('START',M+8,7,fb,gr);tx('EINDE',M+200,7,fb,gr);rx('DUUR',W-M-8,7,fb,gr);y-=3;
+  o.t.forEach((s,i)=>rowz(i,one?13:15,()=>{tx(fd(s.s),M+8);tx(s.e?fd(s.e):'bezig',M+200);rx(hm((s.e||Date.now())-s.s),W-M-8)}));
+  need(20);y-=14;rx('Totaal',W-M-70,9.5,fb);rx(hm(tot(o)),W-M-8,10,fb,bl)}
+ if(o.od.ja){sec('Onderdeel bestellen en vervangen');y-=2;para(o.od.t||'Ja',M+2,CW-4);y-=one?4:0}
+ if(o.fotos.length){sec("Foto's");y-=4;const k=one?6:(o.fotos.length>8?5:4),cw=(CW-(k-1)*6)/k,ch=one?Math.min(cw*.75,42):cw*.75;for(let i=0;i<o.fotos.length;i+=k){need(ch+6);y-=ch;for(const[j,fo]of o.fotos.slice(i,i+k).entries()){const m=await doc.embedJpg(fo),z=m.scaleToFit(cw,ch);pg.drawImage(m,{x:M+j*(cw+6),y:y+ch-z.height,width:z.width,height:z.height})}y-=6}}
+ if(o.sig||S.tsig){need(one?88:128);y-=one?12:16;const x2=W/2+8,top=y;
+  for(const[d,x,lb,nm]of[[o.sig,M,'HANDTEKENING KLANT',o.sigNaam||o.klant],[S.tsig,x2,'HANDTEKENING TECHNIEKER','Jordy Van Eyen']])if(d){y=top;tx(lb,x,7,fb,gr);const m=await doc.embedPng(d),z=m.scaleToFit(235,one?40:62);pg.drawImage(m,{x,y:top-6-z.height,width:z.width,height:z.height});y=top-(one?52:74);rc(x,y,235,.8,gr);y-=11;tx(nm,x,9)}}
+ if(o.sig){y-=9;para('Met de handtekening van de klant bevestigt hij de uitgevoerde werken en aanvaardt hij de algemene voorwaarden op deze werkbon.'+(o.sigT?' Ondertekend op '+fd(o.sigT)+'.':''),M+2,CW-4,6.8,f,dk,1.25)}
+ if(one){const s0=[pg,y],yy=M+8+th;pg=doc.getPages()[0];rc(M,yy-12,CW,12,sb);y=yy-9;tx('ALGEMENE VOORWAARDEN',M+8,6.5,fb,bl);y=yy-12;ts.forEach(ls=>{ls.forEach(l=>{y-=7.1;tx(l,M+2,5.8)});y-=1});pg=s0[0];y=s0[1]}
+ else{sec('Algemene voorwaarden');TERMS3.forEach((t,i)=>{para((i+1)+'. '+t,M+2,CW-4,6.8,f,dk,1.3);y-=1.5})}
+ doc.getPages().forEach((p,i,a)=>p.drawText('Pagina '+(i+1)+' van '+a.length,{x:W-M-60,y:20,size:7.5,font:f,color:gr}));
+ await deliver(new File([await doc.save()],fname(o),{type:'application/pdf'}));
+}catch(e){alert('PDF maken mislukt: '+e.message)}}
 let tab='open',q='';
-const row=o=>`<div class="item" onclick="go('ord','${o.id}')"><div><b>${esc(o.klant)||'Zonder klantnaam'}</b><div class="mu">${o.nr} · ${dt(o.datum)} · ${hms(tot(o))}</div></div><div class="row">${isRun(o)?'<span class="tag r">Loopt</span>':''}${o.status=='afgewerkt'?`<button class="b2" onclick="event.stopPropagation();pdf('${o.id}')">⬇ PDF</button>`:''}</div></div>`;
+const row=o=>`<div class="item" onclick="go('ord','${o.id}')"><div><b>${esc(o.klant)||'Zonder klantnaam'}</b><div class="mu">${esc(o.nr)} · ${dt(o.datum)} · ${hms(tot(o))}</div></div><div class="row">${isRun(o)?'<span class="tag r">Loopt</span>':''}${o.status=='afgewerkt'?`<button class="b2" onclick="event.stopPropagation();pdf('${o.id}')">⬇ PDF</button>`:''}</div></div>`;
 function LST(){
+ if(tab=='kl'){const k=q.trim().toLowerCase(),a=S.clients.filter(c=>!k||[c.n,c.adres,c.tel,c.mail].join(' ').toLowerCase().includes(k)).sort((a,b)=>a.n.localeCompare(b.n));return a.map(c=>`<div class="item" onclick="go('cd','${c.id}')"><div><b>${esc(c.n)||'Zonder naam'}</b><div class="mu">${esc(c.adres)}</div></div><span class="tag">${ords(c).length} werkbon(nen)</span></div>`).join('')||'<p class="mu">Nog geen klanten. Ze worden automatisch bewaard zodra je een werkbon afrondt.</p>'}
  if(tab=='open'){const a=S.orders.filter(o=>o.status!='afgewerkt');return a.map(row).join('')||'<p class="mu">Geen open werkbonnen.</p>'}
  const k=q.trim().toLowerCase(),a=S.orders.filter(o=>o.status=='afgewerkt'&&(!k||[o.nr,o.klant,o.adres,o.tel,o.omschr,dt(o.datum)].join(' ').toLowerCase().includes(k))).sort((a,b)=>(b.datum+b.nr).localeCompare(a.datum+a.nr));
  let m='';return a.map(o=>{const h=o.datum?new Date(o.datum).toLocaleDateString('nl-BE',{month:'long',year:'numeric'}):'Zonder datum',t=h!=m?`<h2 style="margin-top:12px">${h}</h2>`:'';m=h;return t+row(o)}).join('')||'<p class="mu">Geen afgeronde werkbonnen gevonden.</p>'}
 const fl=()=>{const e=$('#lst');if(e)e.innerHTML=LST()};
 function VL(){const n=S.orders.filter(o=>o.status=='afgewerkt').length;return `<img class="lg" src="logo-app.png" alt="Van Eyen Technics"><div class="top"><h1>Werkbonnen</h1><button class="b2" onclick="go('set')">Instellingen</button></div>
-<button style="width:100%;margin-bottom:12px;padding:14px" onclick="newO()">+ Nieuwe werkbon</button>
-<div class="tg" style="margin-bottom:12px"><button class="${tab=='open'?'on':''}" onclick="tab='open';R()">Open</button><button class="${tab=='af'?'on':''}" onclick="tab='af';R()">Afgerond (${n})</button></div>
-${tab=='af'?`<input type="search" placeholder="Zoek op klant, adres, nummer of datum" value="${esc(q)}" oninput="q=this.value;fl()">`:''}
-<div id="lst">${LST()}</div>`}
+<button style="width:100%;margin-bottom:12px;padding:14px" onclick="newO()">+ Nieuwe werkbon</button>${S.orders.length&&(!S.bk||Date.now()-S.bk>12096e5)?`<p class="mu" style="cursor:pointer" onclick="go('set')">⚠ Maak een back-up (Instellingen)${S.bk?' · laatste: '+dt(S.bk):''}</p>`:''}
+<div class="tg" style="margin-bottom:12px"><button class="${tab=='open'?'on':''}" onclick="tab='open';q='';R()">Open</button><button class="${tab=='af'?'on':''}" onclick="tab='af';q='';R()">Afgerond (${n})</button><button class="${tab=='kl'?'on':''}" onclick="tab='kl';q='';R()">Klanten</button></div>
+${tab!='open'?`<input type="search" placeholder="Zoek op klant, adres, nummer of datum" value="${esc(q)}" oninput="q=this.value;fl()">`:''}
+${tab=='kl'?'<button class="b2" style="width:100%;margin-bottom:10px" onclick="newC()">+ Nieuwe klant</button>':''}<div id="lst">${LST()}</div>`}
 
 function VS(){return `<div class="top"><h1>Instellingen</h1><button class="b2" onclick="go('list')">Klaar</button></div>
 <div class="c"><h2>Artikelen / uitgevoerde werken</h2><p class="mu">Deze lijst kies je op een werkbon om de uitgevoerde werken op te sommen.</p>
 <div class="row"><input id="na" placeholder="Nieuw artikel of werk" onkeydown="if(event.key=='Enter')addA()"><button onclick="addA()">Toevoegen</button></div><br>
-${S.articles.map(a=>`<div class="item" style="cursor:default"><span>${esc(a.n)}</span><button class="red" onclick="rmA('${a.id}')">Verwijder</button></div>`).join('')||'<p class="mu">Geen artikelen.</p>'}</div>
+${S.articles.map(a=>`<div class="item" style="cursor:default;flex-wrap:wrap"><span style="flex:1;min-width:150px">${esc(a.n)}</span><input class="q" style="width:92px;margin:0" type="number" step="0.01" min="0" placeholder="€ excl." value="${a.p??''}" oninput="setA('${a.id}','p',this.value)"><select style="width:88px;margin:0" onchange="setA('${a.id}','u',this.value)">${['stuk','uur','m','forfait'].map(u=>`<option ${a.u==u?'selected':''}>${u}</option>`).join('')}</select><button class="red" onclick="rmA('${a.id}')">✕</button></div>`).join('')||'<p class="mu">Geen artikelen.</p>'}</div>
+<div class="c"><h2>Back-up</h2><p class="mu">Je gegevens staan enkel op dit toestel. Maak regelmatig een back-up.${S.bk?' Laatste: '+dt(S.bk)+'.':''}</p><div class="row wrap"><button onclick="backup()">Back-up maken</button><label class="b2" style="padding:11px 16px;border-radius:8px;font-weight:600;cursor:pointer">Terugzetten<input type="file" accept=".json,application/json" hidden onchange="imp(this)"></label></div></div>
+<div class="c"><h2>Pdf-layout</h2><div class="tg"><button class="${!S.lay?'on':''}" onclick="S.lay=0;save();R()">Huidig</button><button class="${S.lay==1?'on':''}" onclick="S.lay=1;save();R()">Nieuw</button><button class="${S.lay==2?'on':''}" onclick="S.lay=2;save();R()">Nieuw, 1 pagina</button></div></div>
 <div class="c"><h2>Handtekening technieker</h2><p class="mu">Wordt automatisch op elke pdf geplaatst.</p><canvas id="sg2"></canvas><button class="b2" style="margin-top:8px" onclick="clrT()">Wissen</button></div>
 <p class="mu">Gegevens worden bewaard op dit toestel, in deze browser. Ze worden niet gesynchroniseerd tussen toestellen.</p>`}
 
 function VO(){const o=O(),run=isRun(o),done=o.status=='afgewerkt';
 return `<div class="top np"><button class="b2" onclick="go('list')">← Terug</button><span class="tag ${done?'d':''}">${done?'Afgewerkt':'Open'}</span></div>
-<h1>${o.nr}</h1><div class="mu" style="margin:-8px 0 12px">Van Eyen Technics</div>
+${ren?`<div class="row" style="margin:6px 0 12px"><input id="rnm" value="${esc(o.nr)}" onkeydown="if(event.key=='Enter')saveRn()"><button onclick="saveRn()">Opslaan</button><button class="b2" onclick="ren=0;R()">✕</button></div>`:`<h1>${esc(o.nr)} <button class="b2 np" style="padding:2px 9px;font-size:15px;vertical-align:middle" onclick="ren=1;R();$('#rnm').focus()">✎</button></h1>`}<div class="mu" style="margin:-8px 0 12px">Van Eyen Technics</div>
 <div class="c"><h2>Klant</h2>
-<input placeholder="Naam klant" value="${esc(o.klant)}" oninput="upd('klant',this.value)">
+<input placeholder="Naam klant" list="kl" onchange="pick(this.value)" value="${esc(o.klant)}" oninput="upd('klant',this.value)"><datalist id="kl">${S.clients.map(c=>`<option value="${esc(c.n)}">`).join('')}</datalist>
 <input placeholder="Adres" value="${esc(o.adres)}" oninput="upd('adres',this.value)">
 <div class="row wrap"><input style="flex:1;min-width:140px" type="tel" placeholder="Telefoon" value="${esc(o.tel)}" oninput="upd('tel',this.value)"><input style="flex:1;min-width:140px" type="email" placeholder="E-mail" value="${esc(o.mail)}" oninput="upd('mail',this.value)"></div><br>
 <div class="mu">Datum</div><input type="date" value="${o.datum}" oninput="upd('datum',this.value)">
 <textarea placeholder="Omschrijving / reden van interventie" oninput="upd('omschr',this.value)">${esc(o.omschr)}</textarea></div>
+<div class="c"><h2>Woning (btw-tarief)</h2><div class="tg np"><button class="${o.btw==6?'on':''}" onclick="setBtw(6)">Ouder dan 10 jaar · 6%</button><button class="${o.btw==21?'on':''}" onclick="setBtw(21)">Nieuwer dan 10 jaar · 21%</button></div></div>
 <div class="c ${run?'run':''}"><h2>Tijdsregistratie</h2><div class="tm" id="tt">${hms(tot(o))}</div>
 ${done?'':`<button class="np ${run?'red':''}" onclick="tgl()">${run?'■ Stop':'▶ Start'}</button>`}
 <div style="margin-top:12px"><div class="mu" style="margin-bottom:6px">Begin- en eindtijd, aan te passen waar nodig</div>${o.t.map((s,i)=>`<div class="trow"><input type="datetime-local" value="${loc(s.s)}" onchange="setT(${i},'s',this.value)"><input type="datetime-local" value="${s.e?loc(s.e):''}" ${s.e?'':'disabled'} onchange="setT(${i},'e',this.value)"><button class="red np" onclick="rmT(${i})">✕</button></div>`).join('')}<button class="b2 np" onclick="addT()">+ Tijdsblok toevoegen</button></div></div>
 <div class="c"><h2>Uitgevoerde werken</h2>
 <div class="row wrap np">${S.articles.map(a=>`<button class="chip" style="border:0" onclick="addW('${a.id}')">+ ${esc(a.n)}</button>`).join('')||'<span class="mu">Voeg artikelen toe in de instellingen.</span>'}</div>
-<div style="margin-top:10px">${o.werk.map((w,i)=>`<div class="row" style="margin-bottom:6px"><span style="flex:1">${esc(w.n)}</span><input class="q" type="number" min="1" value="${w.q}" oninput="qty(${i},this.value)"><button class="red np" onclick="rmW(${i})">✕</button></div>`).join('')}</div>
+<div style="margin-top:10px">${o.werk.map((w,i)=>`<div class="row wrap" style="margin-bottom:8px"><span style="flex:1;min-width:140px">${esc(w.n)}</span><input class="q" type="number" min="0" step="any" value="${w.q}" oninput="qty(${i},this.value)"><span class="mu">${esc(w.u||'')}</span><input class="q" style="width:84px" type="number" min="0" step="0.01" placeholder="€ excl." value="${w.p??''}" oninput="prc(${i},this.value)"><button class="red np" onclick="rmW(${i})">✕</button></div>`).join('')}</div>
+<div id="tot">${TOT(o)}</div>${o.werk.length?`<div class="mu np" style="margin:6px 0 4px">Prijzen en totaal op de pdf tonen?</div><div class="tg np" style="margin-bottom:10px"><button class="${o.pr?'':'on'}" onclick="setPr(0)">Nee</button><button class="${o.pr?'on':''}" onclick="setPr(1)">Ja</button></div>`:''}
 <textarea placeholder="Extra opmerkingen" oninput="upd('opm',this.value)">${esc(o.opm)}</textarea></div>
 <div class="c"><h2>Onderdeel bestellen en vervangen?</h2><div class="tg np"><button class="${o.od.ja?'':'on'}" onclick="odJa(0)">Nee</button><button class="${o.od.ja?'on':''}" onclick="odJa(1)">Ja</button></div>${o.od.ja?`<textarea style="margin-top:8px" placeholder="Welk onderdeel? Merk, type, referentie, aantal" oninput="setOd('t',this.value)">${esc(o.od.t)}</textarea>`:''}</div>
 <div class="c"><h2>Foto's</h2><input class="np" type="file" accept="image/*" multiple onchange="addF(this)">
 <div class="ph">${o.fotos.map((f,i)=>`<div><img src="${f}" alt="Foto ${i+1}"><button class="np" onclick="rmF(${i})">✕</button></div>`).join('')}</div></div>
 <div class="c"><h2>Handtekening klant</h2><input id="snm" placeholder="Naam ondertekenaar" value="${esc(o.sigNaam)}" oninput="sn(this.value)">
-<canvas id="sg"></canvas><button class="b2 np" style="margin-top:8px" onclick="clrSig()">Wissen</button></div>
+<p class="mu" style="margin:4px 0 8px">Met zijn handtekening bevestigt de klant de uitgevoerde werken en aanvaardt hij de algemene voorwaarden.</p><details class="np" style="margin-bottom:8px"><summary class="mu" style="cursor:pointer">Algemene voorwaarden lezen</summary><ol class="mu" style="padding-left:18px">${TERMS3.map(t=>`<li>${esc(t)}</li>`).join('')}</ol></details><canvas id="sg"></canvas><button class="b2 np" style="margin-top:8px" onclick="clrSig()">Wissen</button></div>
 <div class="row wrap np" style="margin-bottom:24px">${done?'<button class="b2" onclick="reopen()">Heropenen</button>':'<button class="ok" onclick="fin()">Werkbon afronden</button>'}<button onclick="pdf()">Exporteer als pdf</button><button class="red" onclick="delO()">Verwijderen</button></div>`}
 
 function initSig(id,get,set){const c=$('#'+id);if(!c)return;const d=devicePixelRatio||1,w=c.clientWidth,h=260;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.lineWidth=2.4;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#111';
@@ -164,11 +244,11 @@ function initSig(id,get,set){const c=$('#'+id);if(!c)return;const d=devicePixelR
  c.onpointerdown=e=>{clearTimeout(tm);dr=1;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e));e.preventDefault()};
  c.onpointermove=e=>{if(dr){x.lineTo(...p(e));x.stroke()}};
  c.onpointerup=c.onpointercancel=()=>{if(dr){dr=0;set(c.toDataURL('image/png'));tm=setTimeout(lock,1200)}}}
-const sigO=()=>initSig('sg',()=>O().sig,x=>{O().sig=x;sv()});
+const sigO=()=>initSig('sg',()=>O().sig,x=>{O().sig=x;O().sigT=Date.now();sv()});
 const sigT=()=>initSig('sg2',()=>S.tsig,x=>{S.tsig=x;sv()});
-function R(){$('#app').innerHTML=v=='list'?VL():v=='set'?VS():VO();if(v=='ord')sigO();if(v=='set')sigT()}
+function R(){$('#app').innerHTML=v=='list'?VL():v=='set'?VS():v=='cd'?VC():VO();if(v=='ord')sigO();if(v=='set')sigT()}
 setInterval(()=>{if(v=='ord'){const o=O(),e=$('#tt');if(o&&e&&isRun(o))e.textContent=hms(tot(o))}},1000);
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 navigator.storage?.persist?.();
-load().then(R);
+load().then(()=>{S.clients=S.clients||[];R()});
 </script></body></html>
