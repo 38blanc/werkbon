@@ -27,9 +27,11 @@ button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:11px 16px
 .ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px}
 .ph div{position:relative}.ph img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block}
 .ph button{position:absolute;top:4px;right:4px;padding:2px 9px;background:rgba(0,0,0,.65)}
-#sg,#sg2{width:100%;height:180px;background:#fff;border:1px dashed var(--mu);border-radius:8px;touch-action:none;display:block}
+#sg,#sg2{width:100%;height:260px;background:#fff;border:1px dashed var(--mu);border-radius:8px;touch-action:none;display:block}
 .q{width:70px;text-align:center}
 .lg{height:46px;display:block;margin-bottom:6px}.tg{display:flex;gap:8px}.tg button{flex:1}.tg .on{background:var(--ac);color:#fff}.tg button:not(.on){background:var(--ac2);color:var(--ac)}.trow{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px}.trow input{margin:0;min-width:0}
+.lk{pointer-events:none;border-style:solid!important}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .lg{filter:brightness(1.8)}}:root[data-theme="dark"] .lg{filter:brightness(1.8)}
 @media print{body{background:#fff;color:#000}.np{display:none!important}.c{break-inside:avoid;border-color:#bbb}input,textarea{border:0;padding:2px 0;background:none}}
 </style></head><body><div id="app"></div>
 <script>
@@ -77,9 +79,9 @@ const cl=t=>String(t??'').replace(/[\u00A0\u202F\u2009]/g,' ').replace(/[^\n\x20
 const hm=ms=>{const m=Math.round(ms/6e4);return Math.floor(m/60)+'u '+String(m%60).padStart(2,'0')+'m'};
 const fd=ms=>new Date(ms).toLocaleString('nl-BE',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
 const TERMS=['Ondertekening van deze werkbon geldt als bevestiging van de uitgevoerde werken.','Van Eyen Technics is niet aansprakelijk voor bestaande verborgen gebreken of gevolgschade buiten de uitgevoerde werken.','Facturen zijn betaalbaar binnen de afgesproken betalingstermijn.','Klachten dienen schriftelijk gemeld te worden binnen 7 kalenderdagen na uitvoering van de werken.','Alle materialen blijven eigendom van Van Eyen Technics tot volledige betaling van de factuur.','Eventuele extra werken buiten de beschreven opdracht kunnen bijkomend gefactureerd worden.'];
-function fname(o){const n=S.orders.filter(x=>x.datum==o.datum&&parseInt(x.id,36)<=parseInt(o.id,36)).length;return`werkbon_${o.datum.split('-').reverse().join('-')}_${n}.pdf`}
-async function pdf(){try{
- const o=O(),L=PDFLib,doc=await L.PDFDocument.create(),f=await doc.embedFont(L.StandardFonts.Helvetica),fb=await doc.embedFont(L.StandardFonts.HelveticaBold),fi=await doc.embedFont(L.StandardFonts.HelveticaBoldOblique);
+const fname=o=>o.nr+'.pdf';
+async function pdf(id){try{
+ const o=id?S.orders.find(x=>x.id==id):O(),L=PDFLib,doc=await L.PDFDocument.create(),f=await doc.embedFont(L.StandardFonts.Helvetica),fb=await doc.embedFont(L.StandardFonts.HelveticaBold),fi=await doc.embedFont(L.StandardFonts.HelveticaBoldOblique);
  const W=595,H=842,M=44,bl=L.rgb(.21,.47,.71),dk=L.rgb(.2,.25,.3),gr=L.rgb(.45,.5,.55),ru=L.rgb(.82,.85,.88);
  let pg,y;const np=()=>{pg=doc.addPage([W,H]);y=H-M},need=h=>{if(y-h<M)np()};
  const tx=(t,x,s=10,ft=f,c=dk)=>pg.drawText(cl(t),{x,y,size:s,font:ft,color:c});
@@ -88,34 +90,42 @@ async function pdf(){try{
  const wrap=(t,w,s,ft=f)=>{const out=[];for(const p of cl(t).split('\n')){let l='';for(const wd of p.split(' ')){const u=l?l+' '+wd:wd;if(l&&ft.widthOfTextAtSize(u,s)>w){out.push(l);l=wd}else l=u}out.push(l)}return out};
  const para=(t,x,w,s=10,ft=f,c=dk)=>{for(const l of wrap(t,w,s,ft)){need(s*1.4);y-=s*1.4;tx(l,x,s,ft,c)}};
  const hd=t=>{need(50);y-=26;tx(t,M,13,fi,bl);y-=4};
- const fld=(a,b)=>{need(24);y-=18;tx(a+':',M+8,9,f,gr);tx(b,M+86);y-=5;rl(M+8,W-M)};
+ const fld=(a,b)=>{if(!b)return;need(24);y-=18;tx(a+':',M+8,9,f,gr);tx(b,M+86);y-=5;rl(M+8,W-M)};
  np();
  const lg=await doc.embedPng(await (await fetch('logo.png')).arrayBuffer()),ld=lg.scale(120/lg.width);
  pg.drawImage(lg,{x:(W-ld.width)/2,y:y-ld.height,width:ld.width,height:ld.height});y-=ld.height+24;
  tx('Van Eyen Technics',M,11,fb);rt('info@vaneyentechnics.be');y-=13;tx('Ilfeldlaan 34, 2610 Wilrijk',M,9);rt('0479687892');y-=12;tx('BTW: BE1034.973.271',M,9);y-=10;rl(M,W-M);
  y-=38;tx('Werkbon',M,26,f,bl);y-=22;tx('# '+o.nr,M,12);
- hd('Klantgegevens');fld('Naam',o.klant);fld('Adres',o.adres);fld('Telefoon',o.tel);if(o.mail)fld('E-mail',o.mail);fld('Datum',dt(o.datum));
- hd('Werkzaamheden');if(o.omschr){para(o.omschr,M+8,W-2*M-16);y-=6}
- need(30);y-=16;tx('Omschrijving',M+8,9,fb);tx('Aantal',W-M-40,9,fb);y-=6;rl(M,W-M,1.4,gr);
- if(!o.werk.length)para('Geen artikelen geselecteerd.',M+8,300,9,f,gr);
+ if(o.klant||o.adres||o.tel||o.mail||o.datum)hd('Klantgegevens');fld('Naam',o.klant);fld('Adres',o.adres);fld('Telefoon',o.tel);if(o.mail)fld('E-mail',o.mail);fld('Datum',dt(o.datum));
+ if(o.omschr||o.werk.length||o.opm)hd('Werkzaamheden');if(o.omschr){para(o.omschr,M+8,W-2*M-16);y-=6}
+ if(o.werk.length){need(30);y-=16;tx('Omschrijving',M+8,9,fb);tx('Aantal',W-M-40,9,fb);y-=6;rl(M,W-M,1.4,gr)}
+ 
  for(const w of o.werk){const ls=wrap(w.n,W-2*M-90,10);need(ls.length*14+8);y-=14;ls.forEach((l,i)=>{if(i)y-=14;tx(l,M+8)});tx(String(w.q),W-M-30);y-=6;rl(M,W-M)}
  if(o.opm){y-=6;para('Opmerkingen: '+o.opm,M+8,W-2*M-16)}
- hd('Tijdsregistratie');if(!o.t.length)para('Geen tijd geregistreerd.',M+8,300,9,f,gr);
+ if(o.t.length)hd('Tijdsregistratie');
  for(const s of o.t){need(22);y-=15;tx(fd(s.s)+'  -  '+(s.e?fd(s.e):'bezig'),M+8);tx(hm((s.e||Date.now())-s.s),W-M-60);y-=5;rl(M,W-M)}
  if(o.t.length){need(22);y-=18;tx('Totaal uren',M+8,10,fb);tx(hm(tot(o)),W-M-60,10,fb)}
  if(o.od.ja){hd('Onderdeel bestellen en vervangen');para(o.od.t||'Ja',M+8,W-2*M-16)}
  if(o.fotos.length){need(200);hd("Foto's");const cw=(W-2*M-16)/3;for(let i=0;i<o.fotos.length;i+=3){const ims=[];for(const fo of o.fotos.slice(i,i+3))ims.push(await doc.embedJpg(fo));const ds=ims.map(m=>m.scale(cw/m.width)),h=Math.max(...ds.map(d=>d.height));need(h+8);y-=h;ims.forEach((m,k)=>pg.drawImage(m,{x:M+k*(cw+8),y:y+h-ds[k].height,width:cw,height:ds[k].height}));y-=8}}
- need(150);y-=30;const x2=W/2+10,top=y;tx('Handtekening klant',M,9,f,gr);tx('Handtekening technieker',x2,9,f,gr);
- for(const[d,x]of[[o.sig,M],[S.tsig,x2]])if(d){const m=await doc.embedPng(d),z=m.scaleToFit(220,80);pg.drawImage(m,{x,y:top-8-z.height,width:z.width,height:z.height})}
- y=top-96;rl(M,M+230,.8,gr);rl(x2,x2+230,.8,gr);y-=12;tx(o.sigNaam||o.klant,M,9);tx('Jordy Van Eyen',x2,9);
- need(90);y-=30;tx('Algemene voorwaarden:',M,7.5,fb,gr);for(const t of TERMS)para('• '+t,M,W-2*M,7,f,gr);
+ if(o.sig||S.tsig){need(190);y-=30;const x2=W/2+10,top=y;
+ for(const[d,x,lb,nm]of[[o.sig,M,'Handtekening klant',o.sigNaam||o.klant],[S.tsig,x2,'Handtekening technieker','Jordy Van Eyen']])if(d){y=top;tx(lb,x,9,f,gr);const m=await doc.embedPng(d),z=m.scaleToFit(230,120);pg.drawImage(m,{x,y:top-8-z.height,width:z.width,height:z.height});y=top-136;rl(x,x+230,.8,gr);y-=12;tx(nm,x,9)}}
+ need(90);y-=30;tx('Algemene voorwaarden:',M,7.5,fb,gr);for(const t of TERMS)para('· '+t,M,W-2*M,7,f,gr);
  const name=fname(o),file=new File([await doc.save()],name,{type:'application/pdf'});
  try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return}}catch(e){if(e.name=='AbortError')return}
  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();
 }catch(e){alert('PDF maken mislukt: '+e.message)}}
-function VL(){return `<img class="lg" src="logo.png" alt="Van Eyen Technics"><div class="top"><h1>Werkbonnen</h1><button class="b2" onclick="go('set')">Instellingen</button></div>
+let tab='open',q='';
+const row=o=>`<div class="item" onclick="go('ord','${o.id}')"><div><b>${esc(o.klant)||'Zonder klantnaam'}</b><div class="mu">${o.nr} · ${dt(o.datum)} · ${hms(tot(o))}</div></div><div class="row">${isRun(o)?'<span class="tag r">Loopt</span>':''}${o.status=='afgewerkt'?`<button class="b2" onclick="event.stopPropagation();pdf('${o.id}')">⬇ PDF</button>`:''}</div></div>`;
+function LST(){
+ if(tab=='open'){const a=S.orders.filter(o=>o.status!='afgewerkt');return a.map(row).join('')||'<p class="mu">Geen open werkbonnen.</p>'}
+ const k=q.trim().toLowerCase(),a=S.orders.filter(o=>o.status=='afgewerkt'&&(!k||[o.nr,o.klant,o.adres,o.tel,o.omschr,dt(o.datum)].join(' ').toLowerCase().includes(k))).sort((a,b)=>(b.datum+b.nr).localeCompare(a.datum+a.nr));
+ let m='';return a.map(o=>{const h=o.datum?new Date(o.datum).toLocaleDateString('nl-BE',{month:'long',year:'numeric'}):'Zonder datum',t=h!=m?`<h2 style="margin-top:12px">${h}</h2>`:'';m=h;return t+row(o)}).join('')||'<p class="mu">Geen afgeronde werkbonnen gevonden.</p>'}
+const fl=()=>{const e=$('#lst');if(e)e.innerHTML=LST()};
+function VL(){const n=S.orders.filter(o=>o.status=='afgewerkt').length;return `<img class="lg" src="logo-app.png" alt="Van Eyen Technics"><div class="top"><h1>Werkbonnen</h1><button class="b2" onclick="go('set')">Instellingen</button></div>
 <button style="width:100%;margin-bottom:12px;padding:14px" onclick="newO()">+ Nieuwe werkbon</button>
-${S.orders.length?S.orders.map(o=>`<div class="item" onclick="go('ord','${o.id}')"><div><b>${esc(o.klant)||'Zonder klantnaam'}</b><div class="mu">${o.nr} · ${dt(o.datum)} · ${hms(tot(o))}</div></div>${isRun(o)?'<span class="tag r">Loopt</span>':`<span class="tag ${o.status=='afgewerkt'?'d':''}">${o.status=='afgewerkt'?'Afgewerkt':'Open'}</span>`}</div>`).join(''):'<p class="mu">Nog geen werkbonnen. Maak je eerste werkbon aan.</p>'}`}
+<div class="tg" style="margin-bottom:12px"><button class="${tab=='open'?'on':''}" onclick="tab='open';R()">Open</button><button class="${tab=='af'?'on':''}" onclick="tab='af';R()">Afgerond (${n})</button></div>
+${tab=='af'?`<input type="search" placeholder="Zoek op klant, adres, nummer of datum" value="${esc(q)}" oninput="q=this.value;fl()">`:''}
+<div id="lst">${LST()}</div>`}
 
 function VS(){return `<div class="top"><h1>Instellingen</h1><button class="b2" onclick="go('list')">Klaar</button></div>
 <div class="c"><h2>Artikelen / uitgevoerde werken</h2><p class="mu">Deze lijst kies je op een werkbon om de uitgevoerde werken op te sommen.</p>
@@ -147,12 +157,13 @@ ${done?'':`<button class="np ${run?'red':''}" onclick="tgl()">${run?'■ Stop':'
 <canvas id="sg"></canvas><button class="b2 np" style="margin-top:8px" onclick="clrSig()">Wissen</button></div>
 <div class="row wrap np" style="margin-bottom:24px">${done?'<button class="b2" onclick="reopen()">Heropenen</button>':'<button class="ok" onclick="fin()">Werkbon afronden</button>'}<button onclick="pdf()">Exporteer als pdf</button><button class="red" onclick="delO()">Verwijderen</button></div>`}
 
-function initSig(id,get,set){const c=$('#'+id);if(!c)return;const d=devicePixelRatio||1,w=c.clientWidth,h=180;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.lineWidth=2.2;x.lineCap='round';x.strokeStyle='#111';
- if(get()){const i=new Image;i.onload=()=>x.drawImage(i,0,0,w,h);i.src=get()}
- let dr=0;const p=e=>{const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
- c.onpointerdown=e=>{dr=1;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e));e.preventDefault()};
+function initSig(id,get,set){const c=$('#'+id);if(!c)return;const d=devicePixelRatio||1,w=c.clientWidth,h=260;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.lineWidth=2.4;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#111';
+ const lock=()=>c.classList.add('lk');c.classList.remove('lk');
+ if(get()){const i=new Image;i.onload=()=>x.drawImage(i,0,0,w,h);i.src=get();lock()}
+ let dr=0,tm;const p=e=>{const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+ c.onpointerdown=e=>{clearTimeout(tm);dr=1;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...p(e));e.preventDefault()};
  c.onpointermove=e=>{if(dr){x.lineTo(...p(e));x.stroke()}};
- c.onpointerup=()=>{if(dr){dr=0;set(c.toDataURL('image/png'))}}}
+ c.onpointerup=c.onpointercancel=()=>{if(dr){dr=0;set(c.toDataURL('image/png'));tm=setTimeout(lock,1200)}}}
 const sigO=()=>initSig('sg',()=>O().sig,x=>{O().sig=x;sv()});
 const sigT=()=>initSig('sg2',()=>S.tsig,x=>{S.tsig=x;sv()});
 function R(){$('#app').innerHTML=v=='list'?VL():v=='set'?VS():VO();if(v=='ord')sigO();if(v=='set')sigT()}
