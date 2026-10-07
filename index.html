@@ -127,6 +127,15 @@ const TERMS3=["Ondertekening van deze werkbon geldt als bevestiging van de uitge
 "Een consument die buiten de verkoopruimte contracteert, heeft in principe 14 dagen herroepingsrecht, behalve voor dringende herstellingen of onderhoud op uitdrukkelijk verzoek van de klant.",
 "Persoonsgegevens en foto's worden enkel verwerkt voor de uitvoering van de opdracht, de administratie en wettelijke verplichtingen (AVG): info@vaneyentechnics.be.",
 "Belgisch recht is van toepassing; de rechtbanken van het arrondissement Antwerpen zijn bevoegd, onder voorbehoud van dwingende consumentenbescherming."];
+const TERMS_S=["Ondertekening van deze werkbon geldt als bevestiging van de uitgevoerde werken en als aanvaarding van deze voorwaarden.",
+"Facturen zijn betaalbaar binnen de op de factuur vermelde termijn; bij laattijdige betaling zijn van rechtswege interesten en een forfaitaire schadevergoeding verschuldigd, overeenkomstig de wet.",
+"Klachten over zichtbare gebreken worden schriftelijk gemeld binnen 7 kalenderdagen na uitvoering, onverminderd de wettelijke garantie en de fabrieksgarantie, die vervallen bij tussenkomst van derden zonder toestemming.",
+"Materialen blijven eigendom van Van Eyen Technics tot volledige betaling. Extra werken buiten de opdracht kunnen bijkomend gefactureerd worden.",
+"Van Eyen Technics is niet aansprakelijk voor bestaande verborgen gebreken of gevolgschade buiten de uitgevoerde werken, onverminderd dwingende wettelijke bepalingen. Bij direct gevaar mag een toestel buiten dienst gesteld worden; de klant blijft verantwoordelijk voor de wettelijk verplichte onderhoudsbeurten en keuringen.",
+"Indien een btw-tarief is vermeld, bevestigt de klant dat de woning ouder of nieuwer is dan 10 jaar zoals aangeduid en hoofdzakelijk privé wordt gebruikt; bij een onjuiste verklaring is de bijkomende btw ten laste van de klant.",
+"Dringende herstellingen of onderhoud op uitdrukkelijk verzoek van de klant vallen niet onder het herroepingsrecht van consumenten.",
+"Persoonsgegevens en foto's worden enkel verwerkt voor de opdracht en de administratie (AVG). Belgisch recht is van toepassing; de rechtbanken van het arrondissement Antwerpen zijn bevoegd, onder voorbehoud van dwingende consumentenbescherming."];
+const TL=()=>S.lay==2?TERMS_S:S.lay==1?TERMS3:TERMS;
 const eur=n=>'€ '+n.toLocaleString('nl-BE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const sums=o=>{const ex=o.werk.reduce((a,w)=>a+(+w.p||0)*w.q,0),bt=o.btw?ex*o.btw/100:0;return{ex,bt,inc:ex+bt,any:o.werk.some(w=>w.p)}};
 const TOT=o=>{const s=sums(o);return s.any?`<div class="mu" style="text-align:right;margin:8px 0">Excl. btw <b>${eur(s.ex)}</b>${o.btw?` · Btw ${o.btw}% <b>${eur(s.bt)}</b> · Totaal <b>${eur(s.inc)}</b>`:' · kies de woning voor het btw-bedrag'}</div>`:''};
@@ -152,7 +161,7 @@ function pdf(id){return(S.lay?pdf3:pdf2)(id)}
 async function pdf3(id){try{
  const o=id?S.orders.find(x=>x.id==id):O(),L=PDFLib,doc=await L.PDFDocument.create(),f=await doc.embedFont(L.StandardFonts.Helvetica),fb=await doc.embedFont(L.StandardFonts.HelveticaBold);
  const W=595,H=842,M=36,CW=W-2*M,bl=L.rgb(.17,.42,.65),dk=L.rgb(.1,.12,.15),gr=L.rgb(.45,.48,.52),zb=L.rgb(.95,.96,.97),sb=L.rgb(.89,.93,.97),wh=L.rgb(1,1,1),pr=o.pr&&sums(o).any,qx=pr?350:W-M-8,px=440;
- const one=S.lay==2;let pg,y,first,lim;const np=()=>{pg=doc.addPage([W,H]);y=H-M},need=h=>{if(y-h<(pg===first?lim:M+14))np()};
+ const one=false,sh=S.lay==2;let pg,y,first,lim;const np=()=>{pg=doc.addPage([W,H]);y=H-M},need=h=>{if(y-h<(pg===first?lim:M+14))np()};
  const tx=(t,x,s=9.5,ft=f,c=dk)=>pg.drawText(cl(t),{x,y,size:s,font:ft,color:c});
  const rx=(t,xe,s=9.5,ft=f,c=dk)=>tx(t,xe-ft.widthOfTextAtSize(cl(t),s),s,ft,c);
  const rc=(x,yy,w,h,c)=>pg.drawRectangle({x,y:yy,width:w,height:h,color:c});
@@ -185,7 +194,7 @@ async function pdf3(id){try{
   for(const[d,x,lb,nm]of[[o.sig,M,'HANDTEKENING KLANT',o.sigNaam||o.klant],[S.tsig,x2,'HANDTEKENING TECHNIEKER','Jordy Van Eyen']])if(d){y=top;tx(lb,x,7,fb,gr);const m=await doc.embedPng(d),z=m.scaleToFit(235,one?40:62);pg.drawImage(m,{x,y:top-6-z.height,width:z.width,height:z.height});y=top-(one?52:74);rc(x,y,235,.8,gr);y-=11;tx(nm,x,9)}}
  if(o.sig){y-=9;para('Met de handtekening van de klant bevestigt hij de uitgevoerde werken en aanvaardt hij de algemene voorwaarden op deze werkbon.'+(o.sigT?' Ondertekend op '+fd(o.sigT)+'.':''),M+2,CW-4,6.8,f,dk,1.25)}
  if(one){const s0=[pg,y],yy=M+8+th;pg=doc.getPages()[0];rc(M,yy-12,CW,12,sb);y=yy-9;tx('ALGEMENE VOORWAARDEN',M+8,6.5,fb,bl);y=yy-12;ts.forEach(ls=>{ls.forEach(l=>{y-=7.1;tx(l,M+2,5.8)});y-=1});pg=s0[0];y=s0[1]}
- else{sec('Algemene voorwaarden');TERMS3.forEach((t,i)=>{para((i+1)+'. '+t,M+2,CW-4,6.8,f,dk,1.3);y-=1.5})}
+ else{sec('Algemene voorwaarden');(sh?TERMS_S:TERMS3).forEach((t,i)=>{para((sh?'· ':(i+1)+'. ')+t,M+2,CW-4,sh?6.3:6.8,f,dk,1.25);y-=sh?1:1.5})}
  doc.getPages().forEach((p,i,a)=>p.drawText('Pagina '+(i+1)+' van '+a.length,{x:W-M-60,y:20,size:7.5,font:f,color:gr}));
  await deliver(new File([await doc.save()],fname(o),{type:'application/pdf'}));
 }catch(e){alert('PDF maken mislukt: '+e.message)}}
@@ -208,7 +217,7 @@ function VS(){return `<div class="top"><h1>Instellingen</h1><button class="b2" o
 <div class="row"><input id="na" placeholder="Nieuw artikel of werk" onkeydown="if(event.key=='Enter')addA()"><button onclick="addA()">Toevoegen</button></div><br>
 ${S.articles.map(a=>`<div class="item" style="cursor:default;flex-wrap:wrap"><span style="flex:1;min-width:150px">${esc(a.n)}</span><input class="q" style="width:92px;margin:0" type="number" step="0.01" min="0" placeholder="€ excl." value="${a.p??''}" oninput="setA('${a.id}','p',this.value)"><select style="width:88px;margin:0" onchange="setA('${a.id}','u',this.value)">${['stuk','uur','m','forfait'].map(u=>`<option ${a.u==u?'selected':''}>${u}</option>`).join('')}</select><button class="red" onclick="rmA('${a.id}')">✕</button></div>`).join('')||'<p class="mu">Geen artikelen.</p>'}</div>
 <div class="c"><h2>Back-up</h2><p class="mu">Je gegevens staan enkel op dit toestel. Maak regelmatig een back-up.${S.bk?' Laatste: '+dt(S.bk)+'.':''}</p><div class="row wrap"><button onclick="backup()">Back-up maken</button><label class="b2" style="padding:11px 16px;border-radius:8px;font-weight:600;cursor:pointer">Terugzetten<input type="file" accept=".json,application/json" hidden onchange="imp(this)"></label></div></div>
-<div class="c"><h2>Pdf-layout</h2><div class="tg"><button class="${!S.lay?'on':''}" onclick="S.lay=0;save();R()">Huidig</button><button class="${S.lay==1?'on':''}" onclick="S.lay=1;save();R()">Nieuw</button><button class="${S.lay==2?'on':''}" onclick="S.lay=2;save();R()">Nieuw, 1 pagina</button></div></div>
+<div class="c"><h2>Pdf-layout</h2><div class="tg"><button class="${!S.lay?'on':''}" onclick="S.lay=0;save();R()">Huidig</button><button class="${S.lay==1?'on':''}" onclick="S.lay=1;save();R()">Nieuw</button><button class="${S.lay==2?'on':''}" onclick="S.lay=2;save();R()">Compact</button></div></div>
 <div class="c"><h2>Handtekening technieker</h2><p class="mu">Wordt automatisch op elke pdf geplaatst.</p><canvas id="sg2"></canvas><button class="b2" style="margin-top:8px" onclick="clrT()">Wissen</button></div>
 <p class="mu">Gegevens worden bewaard op dit toestel, in deze browser. Ze worden niet gesynchroniseerd tussen toestellen.</p>`}
 
@@ -234,7 +243,7 @@ ${done?'':`<button class="np ${run?'red':''}" onclick="tgl()">${run?'■ Stop':'
 <div class="c"><h2>Foto's</h2><input class="np" type="file" accept="image/*" multiple onchange="addF(this)">
 <div class="ph">${o.fotos.map((f,i)=>`<div><img src="${f}" alt="Foto ${i+1}"><button class="np" onclick="rmF(${i})">✕</button></div>`).join('')}</div></div>
 <div class="c"><h2>Handtekening klant</h2><input id="snm" placeholder="Naam ondertekenaar" value="${esc(o.sigNaam)}" oninput="sn(this.value)">
-<p class="mu" style="margin:4px 0 8px">Met zijn handtekening bevestigt de klant de uitgevoerde werken en aanvaardt hij de algemene voorwaarden.</p><details class="np" style="margin-bottom:8px"><summary class="mu" style="cursor:pointer">Algemene voorwaarden lezen</summary><ol class="mu" style="padding-left:18px">${TERMS3.map(t=>`<li>${esc(t)}</li>`).join('')}</ol></details><canvas id="sg"></canvas><button class="b2 np" style="margin-top:8px" onclick="clrSig()">Wissen</button></div>
+<p class="mu" style="margin:4px 0 8px">Met zijn handtekening bevestigt de klant de uitgevoerde werken en aanvaardt hij de algemene voorwaarden.</p><details class="np" style="margin-bottom:8px"><summary class="mu" style="cursor:pointer">Algemene voorwaarden lezen</summary><ol class="mu" style="padding-left:18px">${TL().map(t=>`<li>${esc(t)}</li>`).join('')}</ol></details><canvas id="sg"></canvas><button class="b2 np" style="margin-top:8px" onclick="clrSig()">Wissen</button></div>
 <div class="row wrap np" style="margin-bottom:24px">${done?'<button class="b2" onclick="reopen()">Heropenen</button>':'<button class="ok" onclick="fin()">Werkbon afronden</button>'}<button onclick="pdf()">Exporteer als pdf</button><button class="red" onclick="delO()">Verwijderen</button></div>`}
 
 function initSig(id,get,set){const c=$('#'+id);if(!c)return;const d=devicePixelRatio||1,w=c.clientWidth,h=260;c.width=w*d;c.height=h*d;const x=c.getContext('2d');x.scale(d,d);x.lineWidth=2.4;x.lineCap='round';x.lineJoin='round';x.strokeStyle='#111';
