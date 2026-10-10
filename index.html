@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="nl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Werkbonnen – Van Eyen Technics</title>
-<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1b6a8a"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Werkbonnen">
+<title>VET Work</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1b6a8a"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="VET Work">
 <script src="pdf-lib.min.js"></script>
 <style>
 :root{--bg:#eceff2;--card:#fff;--tx:#14202b;--mu:#617080;--ac:#1b6a8a;--ac2:#e8f2f6;--bd:#d5dbe1;--rd:#c8321c;--ok:#23844a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -155,7 +155,7 @@ function VC(){const c=C(),h=ords(c).sort((a,b)=>b.datum.localeCompare(a.datum));
 <button style="width:100%;margin-bottom:12px" onclick="newO('${c.id}')">+ Nieuwe werkbon voor deze klant</button>
 <div class="c"><h2>Werkbonnen (${h.length})</h2>${h.map(row).join('')||'<p class="mu">Nog geen werkbonnen.</p>'}</div>`}
 async function deliver(file){try{if(navigator.canShare?.({files:[file]})){await navigator.share({files:[file]});return 1}}catch(e){if(e.name=='AbortError')return}const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();return 1}
-async function backup(){const f=new File([JSON.stringify(S)],'werkbon-backup-'+new Date().toISOString().slice(0,10)+'.json',{type:'application/json'});if(await deliver(f)){S.bk=Date.now();save();R()}}
+async function backup(){const f=new File([JSON.stringify(S)],'vet-work-backup-'+new Date().toISOString().slice(0,10)+'.json',{type:'application/json'});if(await deliver(f)){S.bk=Date.now();save();R()}}
 async function imp(inp){try{const d=JSON.parse(await inp.files[0].text());if(!Array.isArray(d.orders))throw 0;const m=(a,b)=>{const k=new Map(a.map(x=>[x.id,x]));b.forEach(x=>k.set(x.id,x));return[...k.values()]};S.orders=m(S.orders,d.orders);S.articles=m(S.articles,d.articles||[]);S.clients=m(S.clients||[],d.clients||[]);S.seq=Math.max(S.seq,d.seq||0);if(d.tsig&&!S.tsig)S.tsig=d.tsig;await save();alert('Back-up teruggezet.');go('list')}catch(e){alert('Dit bestand is geen geldige back-up.')}inp.value=''}
 function pdf(id){return(S.lay?pdf3:pdf2)(id)}
 async function pdf3(id){try{
@@ -206,7 +206,7 @@ function LST(){
  const k=q.trim().toLowerCase(),a=S.orders.filter(o=>o.status=='afgewerkt'&&(!k||[o.nr,o.klant,o.adres,o.tel,o.omschr,dt(o.datum)].join(' ').toLowerCase().includes(k))).sort((a,b)=>(b.datum+b.nr).localeCompare(a.datum+a.nr));
  let m='';return a.map(o=>{const h=o.datum?new Date(o.datum).toLocaleDateString('nl-BE',{month:'long',year:'numeric'}):'Zonder datum',t=h!=m?`<h2 style="margin-top:12px">${h}</h2>`:'';m=h;return t+row(o)}).join('')||'<p class="mu">Geen afgeronde werkbonnen gevonden.</p>'}
 const fl=()=>{const e=$('#lst');if(e)e.innerHTML=LST()};
-function VL(){const n=S.orders.filter(o=>o.status=='afgewerkt').length;return `<img class="lg" src="logo-app.png" alt="Van Eyen Technics"><div class="top"><h1>Werkbonnen</h1><button class="b2" onclick="go('set')">Instellingen</button></div>
+function VL(){const n=S.orders.filter(o=>o.status=='afgewerkt').length;return `<img class="lg" src="logo-app.png" alt="Van Eyen Technics"><div class="top"><h1>VET Work</h1><button class="b2" onclick="go('set')">Instellingen</button></div>
 <button style="width:100%;margin-bottom:12px;padding:14px" onclick="newO()">+ Nieuwe werkbon</button>${S.orders.length&&(!S.bk||Date.now()-S.bk>12096e5)?`<p class="mu" style="cursor:pointer" onclick="go('set')">⚠ Maak een back-up (Instellingen)${S.bk?' · laatste: '+dt(S.bk):''}</p>`:''}
 <div class="tg" style="margin-bottom:12px"><button class="${tab=='open'?'on':''}" onclick="tab='open';q='';R()">Open</button><button class="${tab=='af'?'on':''}" onclick="tab='af';q='';R()">Afgerond (${n})</button><button class="${tab=='kl'?'on':''}" onclick="tab='kl';q='';R()">Klanten</button></div>
 ${tab!='open'?`<input type="search" placeholder="Zoek op klant, adres, nummer of datum" value="${esc(q)}" oninput="q=this.value;fl()">`:''}
